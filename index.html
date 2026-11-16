@@ -6,12 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>VANGUARD // Tactical Multiplayer Arena</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
+      touch-action: none;
     }
     body, html {
       margin: 0;
@@ -22,6 +24,7 @@
       background-color: #090c10;
       font-family: 'Chakra Petch', sans-serif;
       color: #e2e8f0;
+      touch-action: none;
     }
     .font-mono-tech {
       font-family: 'JetBrains Mono', monospace;
@@ -31,6 +34,7 @@
       width: 100%;
       height: 100%;
       cursor: crosshair;
+      touch-action: none;
     }
     /* Custom Tactical Scrollbar */
     ::-webkit-scrollbar {
@@ -246,6 +250,9 @@
           <button id="muteBtn" onclick="toggleMute()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono-tech text-slate-200">
             🔊 SFX
           </button>
+          <button id="toggleTouchBtn" onclick="toggleTouchControls()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono-tech text-sky-300" title="Toggle Touch Joysticks">
+            🕹️ TOUCH
+          </button>
           <button id="toggleHeadPanelBtn" onclick="toggleHeadDrawer()" class="hidden px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-xs font-mono-tech font-bold text-amber-300">
             👑 HEAD CMD
           </button>
@@ -333,35 +340,35 @@
     </div>
 
     <!-- BOTTOM CENTER: WEAPON SELECTOR BAR -->
-    <div class="fixed bottom-24 sm:bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 pointer-events-auto">
-      <button onclick="switchWeapon('m4a1')" id="wep-btn-m4a1" class="wep-slot tac-panel px-2.5 py-1.5 rounded-lg border border-sky-400 text-left transition">
-        <div class="text-[10px] font-mono-tech text-sky-400">[1] AR</div>
-        <div class="text-xs font-bold text-white">M4A1</div>
+    <div class="fixed bottom-36 sm:bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-1.5 pointer-events-auto z-30">
+      <button onclick="switchWeapon('m4a1')" id="wep-btn-m4a1" class="wep-slot tac-panel px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-sky-400 text-left transition">
+        <div class="text-[9px] sm:text-[10px] font-mono-tech text-sky-400">[1] AR</div>
+        <div class="text-[11px] sm:text-xs font-bold text-white">M4A1</div>
       </button>
-      <button onclick="switchWeapon('mp5')" id="wep-btn-mp5" class="wep-slot tac-panel px-2.5 py-1.5 rounded-lg border border-slate-700 text-left opacity-75 transition">
-        <div class="text-[10px] font-mono-tech text-slate-400">[2] SMG</div>
-        <div class="text-xs font-bold text-white">MP5-SD</div>
+      <button onclick="switchWeapon('mp5')" id="wep-btn-mp5" class="wep-slot tac-panel px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-slate-700 text-left opacity-75 transition">
+        <div class="text-[9px] sm:text-[10px] font-mono-tech text-slate-400">[2] SMG</div>
+        <div class="text-[11px] sm:text-xs font-bold text-white">MP5</div>
       </button>
-      <button onclick="switchWeapon('m870')" id="wep-btn-m870" class="wep-slot tac-panel px-2.5 py-1.5 rounded-lg border border-slate-700 text-left opacity-75 transition">
-        <div class="text-[10px] font-mono-tech text-slate-400">[3] SG</div>
-        <div class="text-xs font-bold text-white">M870</div>
+      <button onclick="switchWeapon('m870')" id="wep-btn-m870" class="wep-slot tac-panel px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-slate-700 text-left opacity-75 transition">
+        <div class="text-[9px] sm:text-[10px] font-mono-tech text-slate-400">[3] SG</div>
+        <div class="text-[11px] sm:text-xs font-bold text-white">M870</div>
       </button>
-      <button onclick="switchWeapon('awm')" id="wep-btn-awm" class="wep-slot tac-panel px-2.5 py-1.5 rounded-lg border border-slate-700 text-left opacity-75 transition">
-        <div class="text-[10px] font-mono-tech text-slate-400">[4] SR</div>
-        <div class="text-xs font-bold text-white">AWM</div>
+      <button onclick="switchWeapon('awm')" id="wep-btn-awm" class="wep-slot tac-panel px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-slate-700 text-left opacity-75 transition">
+        <div class="text-[9px] sm:text-[10px] font-mono-tech text-slate-400">[4] SR</div>
+        <div class="text-[11px] sm:text-xs font-bold text-white">AWM</div>
       </button>
-      <button onclick="switchWeapon('m9')" id="wep-btn-m9" class="wep-slot tac-panel px-2.5 py-1.5 rounded-lg border border-slate-700 text-left opacity-75 transition">
-        <div class="text-[10px] font-mono-tech text-slate-400">[5] PISTOL</div>
-        <div class="text-xs font-bold text-white">M9</div>
+      <button onclick="switchWeapon('m9')" id="wep-btn-m9" class="wep-slot tac-panel px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-slate-700 text-left opacity-75 transition">
+        <div class="text-[9px] sm:text-[10px] font-mono-tech text-slate-400">[5] PISTOL</div>
+        <div class="text-[11px] sm:text-xs font-bold text-white">M9</div>
       </button>
     </div>
 
     <!-- BOTTOM LEFT: HEALTH, ARMOR & STAMINA -->
-    <div id="vitalsHud" class="fixed bottom-4 left-3 tac-panel rounded-xl p-3 w-56 sm:w-64">
+    <div id="vitalsHud" class="fixed bottom-3 left-3 tac-panel rounded-xl p-2.5 sm:p-3 w-44 sm:w-64">
       <!-- Armor Bar -->
-      <div class="mb-2">
+      <div class="mb-1.5 sm:mb-2">
         <div class="flex justify-between text-[10px] font-mono-tech mb-0.5">
-          <span class="text-sky-400 font-bold">KEVLAR ARMOR</span>
+          <span class="text-sky-400 font-bold">ARMOR</span>
           <span id="armorVal" class="text-sky-300">100</span>
         </div>
         <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -369,19 +376,19 @@
         </div>
       </div>
       <!-- Health Bar -->
-      <div class="mb-2">
+      <div class="mb-1.5 sm:mb-2">
         <div class="flex justify-between text-xs font-mono-tech mb-0.5">
-          <span class="text-emerald-400 font-bold">HP // VITALS</span>
+          <span class="text-emerald-400 font-bold">HP</span>
           <span id="hpVal" class="text-white font-bold">100</span>
         </div>
-        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+        <div class="w-full h-2 sm:h-2.5 bg-slate-800 rounded-full overflow-hidden">
           <div id="hpBar" class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-150" style="width: 100%"></div>
         </div>
       </div>
       <!-- Stamina / Dash Bar -->
       <div>
         <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mb-0.5">
-          <span>TACTICAL DASH [SPACE]</span>
+          <span>DASH</span>
           <span id="staminaVal">100%</span>
         </div>
         <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
@@ -391,30 +398,50 @@
     </div>
 
     <!-- BOTTOM RIGHT: AMMO & BALLISTICS TELEMETRY -->
-    <div id="ammoHud" class="fixed bottom-4 right-3 tac-panel rounded-xl p-3 w-52 sm:w-60 text-right">
+    <div id="ammoHud" class="fixed bottom-3 right-3 tac-panel rounded-xl p-2.5 sm:p-3 w-44 sm:w-60 text-right">
       <div class="flex items-center justify-between text-[10px] font-mono-tech text-slate-400 uppercase mb-0.5">
         <span id="weaponFireMode" class="px-1.5 py-0.2 bg-slate-800 rounded text-sky-300">AUTO</span>
-        <span id="weaponCategory">ASSAULT RIFLE</span>
+        <span id="weaponCategory" class="truncate ml-1">ASSAULT RIFLE</span>
       </div>
-      <div id="weaponNameHud" class="text-base sm:text-lg font-bold text-white tracking-wide">M4A1 TACTICAL</div>
-      <div class="flex items-baseline justify-end gap-1.5 mt-1 font-mono-tech">
-        <span id="magAmmoHud" class="text-3xl font-bold text-sky-400">30</span>
-        <span class="text-slate-500 text-lg">/</span>
-        <span id="reserveAmmoHud" class="text-base text-slate-300">120</span>
+      <div id="weaponNameHud" class="text-sm sm:text-lg font-bold text-white tracking-wide truncate">M4A1 TACTICAL</div>
+      <div class="flex items-baseline justify-end gap-1.5 mt-0.5 sm:mt-1 font-mono-tech">
+        <span id="magAmmoHud" class="text-2xl sm:text-3xl font-bold text-sky-400">30</span>
+        <span class="text-slate-500 text-base sm:text-lg">/</span>
+        <span id="reserveAmmoHud" class="text-sm sm:text-base text-slate-300">120</span>
       </div>
-      <div id="reloadStatusHud" class="text-[11px] font-mono-tech text-amber-400 h-4 mt-0.5">READY</div>
+      <div id="reloadStatusHud" class="text-[10px] sm:text-[11px] font-mono-tech text-amber-400 h-4 mt-0.5">READY</div>
     </div>
 
-    <!-- MOBILE TOUCH CONTROLS (VISIBLE ON SMALL TOUCH SCREENS) -->
-    <div id="mobileControls" class="sm:hidden fixed inset-0 pointer-events-none z-30">
-      <div id="touchMoveZone" class="fixed bottom-28 left-4 w-28 h-28 rounded-full border border-sky-400/30 bg-slate-900/40 pointer-events-auto flex items-center justify-center">
-        <div id="touchMoveKnob" class="w-10 h-10 rounded-full bg-sky-400/50"></div>
+    <!-- DUAL VIRTUAL TOUCH JOYSTICKS & ACTION CONTROLS -->
+    <div id="mobileControls" class="fixed inset-0 pointer-events-none z-30">
+      <!-- Left Movement Joystick -->
+      <div id="touchMoveZone" class="fixed bottom-28 left-5 w-32 h-32 rounded-full border-2 border-sky-400/40 bg-slate-900/50 backdrop-blur-xs pointer-events-auto flex items-center justify-center shadow-lg">
+        <div class="text-[9px] font-mono-tech text-sky-400/50 uppercase tracking-widest pointer-events-none">MOVE</div>
+        <div id="touchMoveKnob" class="w-12 h-12 rounded-full bg-sky-400/70 border-2 border-white/80 shadow-md pointer-events-none"></div>
       </div>
-      <div class="fixed bottom-28 right-4 flex flex-col gap-2 pointer-events-auto">
-        <button id="touchFireBtn" class="w-16 h-16 rounded-full bg-rose-600/70 border-2 border-rose-400 text-white font-bold text-xs shadow-lg">FIRE</button>
-        <div class="flex gap-2">
-          <button onclick="triggerReload()" class="w-11 h-11 rounded-full bg-slate-800/80 border border-slate-600 text-amber-300 text-xs font-bold">R</button>
-          <button onclick="triggerDash()" class="w-11 h-11 rounded-full bg-slate-800/80 border border-slate-600 text-sky-300 text-xs font-bold">DASH</button>
+
+      <!-- Right Aim & Auto-Fire Joystick + Tactical Buttons -->
+      <div class="fixed bottom-28 right-5 flex flex-col items-end gap-3 pointer-events-none">
+        <!-- Tactical Action Buttons Row -->
+        <div class="flex items-center gap-2 pointer-events-auto">
+          <button onclick="cycleNextWeapon()" class="w-11 h-11 rounded-full bg-slate-900/85 border border-sky-400/50 text-sky-300 text-[10px] font-mono-tech font-bold shadow-lg active:scale-95">
+            SWAP
+          </button>
+          <button onclick="triggerReload()" class="w-11 h-11 rounded-full bg-slate-900/85 border border-amber-400/50 text-amber-300 text-xs font-mono-tech font-bold shadow-lg active:scale-95">
+            REL
+          </button>
+          <button onclick="triggerDash()" class="w-11 h-11 rounded-full bg-slate-900/85 border border-emerald-400/50 text-emerald-300 text-[10px] font-mono-tech font-bold shadow-lg active:scale-95">
+            DASH
+          </button>
+          <button id="touchFireBtn" class="w-12 h-12 rounded-full bg-rose-600/85 border-2 border-rose-300 text-white font-bold text-[10px] font-mono-tech shadow-lg active:scale-95">
+            FIRE
+          </button>
+        </div>
+
+        <!-- Right 360 Aim Joystick -->
+        <div id="touchAimZone" class="w-32 h-32 rounded-full border-2 border-rose-400/40 bg-slate-900/50 backdrop-blur-xs pointer-events-auto flex items-center justify-center shadow-lg">
+          <div class="text-[9px] font-mono-tech text-rose-400/50 uppercase tracking-widest pointer-events-none">AIM / FIRE</div>
+          <div id="touchAimKnob" class="w-12 h-12 rounded-full bg-rose-500/75 border-2 border-white/80 shadow-md pointer-events-none"></div>
         </div>
       </div>
     </div>
@@ -431,43 +458,24 @@
   </div>
 
   <!-- ===================================================================== -->
-  <!-- GAME ENGINE & FIREBASE MULTIPLAYER SCRIPT -->
+  <!-- GAME ENGINE & PEERJS CROSS-DEVICE MULTIPLAYER SCRIPT -->
   <!-- ===================================================================== -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+  <script>
     // =========================================================================
-    // 1. FIREBASE INITIALIZATION & AUTHENTICATION
+    // 1. PEERJS WEBRTC NETWORKING & RELAY STATUS
     // =========================================================================
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'vanguard-arena-default';
-    let db = null;
-    let auth = null;
-    let currentUser = null;
-    let firebaseReady = false;
+    const PEER_PREFIX = 'vanguard-arena-v2-';
+    let peer = null;
+    let hostConn = null; // Used by clients connected to the Head host
+    let clientConns = new Map(); // Used by Head host: peerId -> DataConnection
+    let peerReady = false;
+    let currentPing = 0;
 
-    async function initFirebase() {
-      try {
-        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-          const firebaseConfig = JSON.parse(__firebase_config);
-          const app = initializeApp(firebaseConfig);
-          auth = getAuth(app);
-          db = getFirestore(app);
-
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-          } else {
-            await signInAnonymously(auth);
-          }
-          currentUser = auth.currentUser;
-          firebaseReady = true;
-          updateNetBadge('ONLINE // UPLINK READY', 'bg-emerald-400');
-        } else {
-          updateNetBadge('LOCAL SIMULATION MODE', 'bg-amber-400');
-        }
-      } catch (err) {
-        console.warn("Firebase fallback to local mode:", err);
+    function initNetworkStatus() {
+      if (typeof Peer !== 'undefined') {
+        peerReady = true;
+        updateNetBadge('WEBRTC RELAY READY // CROSS-DEVICE', 'bg-emerald-400');
+      } else {
         updateNetBadge('OFFLINE // BOT RANGE READY', 'bg-amber-400');
       }
     }
@@ -481,7 +489,27 @@
       }
     }
 
-    initFirebase();
+    initNetworkStatus();
+
+    // Auto-show touch controls on touch screens or narrow mobile viewports
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 768;
+    if (!isTouchDevice) {
+      document.getElementById('mobileControls').classList.add('hidden');
+    }
+
+    window.toggleTouchControls = function() {
+      const mc = document.getElementById('mobileControls');
+      mc.classList.toggle('hidden');
+    };
+
+    window.cycleNextWeapon = function() {
+      const me = state.players[state.localPlayerId];
+      if (!me) return;
+      const keys = Object.keys(WEAPONS);
+      const idx = keys.indexOf(me.currentWeapon);
+      const nextKey = keys[(idx + 1) % keys.length];
+      switchWeapon(nextKey);
+    };
 
     // =========================================================================
     // 2. WEAPON BALLISTICS DATABASE (5 REALISTIC WEAPONS)
@@ -886,7 +914,7 @@
     // =========================================================================
     const state = {
       inGame: false,
-      mode: 'solo', // 'solo' | 'multiplayer'
+      mode: 'solo', // 'solo' | 'host' | 'client'
       roomId: null,
       playerCode: '',
       headCode: '',
@@ -918,7 +946,7 @@
       mouse: { x: 0, y: 0, worldX: 0, worldY: 0, down: false, justPressed: false },
       keys: {},
       lastSyncTime: 0,
-      unsubscribers: []
+      pingInterval: null
     };
 
     // =========================================================================
@@ -1012,68 +1040,34 @@
     };
 
     // =========================================================================
-    // 7. PLAYER CREATION & INVENTORY HELPERS
-    // =========================================================================
-    function createPlayerEntity(id, name, isBot = false, isHead = false, spectatorOnly = false, startWep = 'm4a1') {
-      const spawn = SPAWN_POINTS[Math.floor(Math.random() * SPAWN_POINTS.length)];
-      const inventory = {};
-      Object.keys(WEAPONS).forEach(wKey => {
-        inventory[wKey] = {
-          mag: WEAPONS[wKey].magSize,
-          reserve: WEAPONS[wKey].reserveMax
-        };
-      });
-
-      return {
-        id,
-        name: name || `OP-${id.slice(0, 4).toUpperCase()}`,
-        isBot,
-        isHead,
-        spectatorOnly,
-        x: spawn.x + (Math.random() * 60 - 30),
-        y: spawn.y + (Math.random() * 60 - 30),
-        vx: 0,
-        vy: 0,
-        angle: 0,
-        radius: 18,
-        hp: 100,
-        maxHp: 100,
-        armor: 100,
-        maxArmor: 100,
-        stamina: 100,
-        dashCooldown: 0,
-        dead: false,
-        respawnTimer: 0,
-        lastAttackerId: null,
-        kills: 0,
-        deaths: 0,
-        currentWeapon: startWep,
-        inventory,
-        bloom: 0,
-        lastShotTime: 0,
-        reloading: false,
-        reloadEndTime: 0,
-        reloadStartTime: 0,
-        muzzleFlash: 0,
-        inBush: false,
-        // Bot AI state
-        aiTargetId: null,
-        aiMoveTimer: 0,
-        aiMoveAngle: Math.random() * Math.PI * 2,
-        aiStrafeDir: Math.random() < 0.5 ? 1 : -1
-      };
-    }
-
-    // =========================================================================
-    // 8. ROOM HOSTING, JOINING & FIREBASE REALTIME SYNC
+    // 8. PEERJS HOSTING, JOINING & CROSS-DEVICE SYNC
     // =========================================================================
     function getCallsign() {
       const val = document.getElementById('callsignInput').value.trim().toUpperCase();
       return val || `VANGUARD-${Math.floor(10 + Math.random() * 89)}`;
     }
 
+    function cleanupPeer() {
+      if (state.pingInterval) {
+        clearInterval(state.pingInterval);
+        state.pingInterval = null;
+      }
+      if (hostConn) {
+        try { hostConn.close(); } catch (e) {}
+        hostConn = null;
+      }
+      clientConns.forEach(c => {
+        try { c.close(); } catch (e) {}
+      });
+      clientConns.clear();
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+        peer = null;
+      }
+    }
+
     // CREATE ROOM (HOST / HEAD)
-    document.getElementById('createRoomBtn').addEventListener('click', async () => {
+    document.getElementById('createRoomBtn').addEventListener('click', () => {
       sfx.init();
       const callsign = getCallsign();
       const startWep = document.getElementById('initialWeaponSelect').value;
@@ -1083,114 +1077,377 @@
       let headCode = generateCode(6);
       while (headCode === playerCode) headCode = generateCode(6);
 
-      state.playerCode = playerCode;
-      state.headCode = headCode;
-      state.isHead = true;
-      state.isSpectatorOnly = !hostPlays;
-      state.localPlayerId = currentUser ? currentUser.uid : `host_${generateCode(8)}`;
-
-      if (firebaseReady && db) {
-        try {
-          state.mode = 'multiplayer';
-          state.roomId = playerCode; // Room indexed by playerCode
-
-          const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', playerCode);
-          await setDoc(roomRef, {
-            playerCode,
-            headCode,
-            hostId: state.localPlayerId,
-            createdAt: Date.now(),
-            zoneActive: false,
-            zoneRadius: 1550,
-            destroyedObstacles: [],
-            supplyDrops: []
-          });
-
-          // Also store lookup pointer for Head Code so anyone with Head Code can find the room
-          const headLookupRef = doc(db, 'artifacts', appId, 'public', 'data', 'head_codes', headCode);
-          await setDoc(headLookupRef, {
-            playerCode,
-            headCode,
-            createdAt: Date.now()
-          });
-
-          await enterArenaSession(callsign, startWep);
-          showToast(`ARENA CREATED! SHARE PLAYER CODE: ${playerCode}`, 'head');
-        } catch (err) {
-          console.error("Failed to create Firestore room:", err);
-          showToast("NETWORK ERROR - LAUNCHING LOCAL HOST MODE", "danger");
-          launchSoloSession(callsign, startWep, true);
-        }
-      } else {
+      if (!peerReady || typeof Peer === 'undefined') {
+        showToast("WEBRTC UNAVAILABLE - LAUNCHING SOLO BOT RANGE", "danger");
         launchSoloSession(callsign, startWep, true);
+        return;
       }
+
+      cleanupPeer();
+      updateNetBadge('INITIALIZING HOST RELAY...', 'bg-amber-400');
+
+      // Register PeerJS Host under Player Code so anyone with Player Code or Head Code can reach it
+      const peerId = `${PEER_PREFIX}${playerCode}`;
+      peer = new Peer(peerId, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      });
+
+      peer.on('open', (id) => {
+        state.mode = 'host';
+        state.roomId = playerCode;
+        state.playerCode = playerCode;
+        state.headCode = headCode;
+        state.isHead = true;
+        state.isSpectatorOnly = !hostPlays;
+        state.localPlayerId = id;
+
+        state.players = {};
+        state.obstacles = createInitialObstacles();
+        state.destroyedObstacleIds.clear();
+        state.supplyDrops = [];
+        state.zone.active = false;
+        state.zone.radius = 1550;
+
+        const me = createPlayerEntity(state.localPlayerId, callsign, false, true, state.isSpectatorOnly, startWep);
+        state.players[state.localPlayerId] = me;
+
+        setupHudForMatch();
+        updateNetBadge(`HOSTING LIVE ROOM [${playerCode}]`, 'bg-emerald-400');
+        showToast(`ARENA LIVE! SHARE PLAYER CODE: ${playerCode}`, 'head');
+      });
+
+      peer.on('connection', (conn) => {
+        conn.on('open', () => {
+          clientConns.set(conn.peer, conn);
+        });
+
+        conn.on('data', (msg) => {
+          handleHostIncomingData(conn, msg);
+        });
+
+        conn.on('close', () => {
+          clientConns.delete(conn.peer);
+          if (state.players[conn.peer]) {
+            showToast(`${state.players[conn.peer].name} DISCONNECTED`, 'info');
+            delete state.players[conn.peer];
+            broadcastFromHost({ type: 'player_left', id: conn.peer });
+          }
+        });
+      });
+
+      peer.on('error', (err) => {
+        console.error('Peer host error:', err);
+        showToast(`RELAY ERROR: ${err.type} - USING LOCAL RANGE`, 'danger');
+        launchSoloSession(callsign, startWep, true);
+      });
     });
 
     // JOIN EXISTING ROOM VIA PLAYER CODE OR HEAD CODE
-    document.getElementById('joinRoomBtn').addEventListener('click', async () => {
+    // Note: Players enter the 6-char Player Code. If someone also has the Head Code, they can enter "PLAYERCODE:HEADCODE" or join via Player Code and authenticate in Head Console.
+    document.getElementById('joinRoomBtn').addEventListener('click', () => {
       sfx.init();
-      const inputCode = document.getElementById('joinCodeInput').value.trim().toUpperCase();
-      if (inputCode.length !== 6) {
+      const rawInput = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+      if (rawInput.length < 6) {
         showToast("ENTER A VALID 6-CHARACTER ACCESS CODE", "danger");
         return;
       }
 
-      if (!firebaseReady || !db) {
-        showToast("MULTIPLAYER UPLINK OFFLINE - TRY SOLO BOT RANGE", "danger");
+      if (!peerReady || typeof Peer === 'undefined') {
+        showToast("WEBRTC RELAY OFFLINE - TRY SOLO BOT RANGE", "danger");
         return;
       }
 
       const callsign = getCallsign();
       const startWep = document.getElementById('initialWeaponSelect').value;
-      state.localPlayerId = currentUser ? currentUser.uid : `op_${generateCode(8)}`;
 
-      try {
-        // 1. Check if code matches a Player Code directly
-        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', inputCode);
-        const roomSnap = await getDoc(roomRef);
+      // Support either 6-char Player Code or "PLAYERCODE-HEADCODE"
+      const parts = rawInput.split(/[-: ]+/);
+      const targetRoomCode = parts[0].slice(0, 6);
+      const suppliedHeadCode = parts[1] ? parts[1].slice(0, 6) : '';
 
-        if (roomSnap.exists()) {
-          const data = roomSnap.data();
-          state.mode = 'multiplayer';
-          state.roomId = data.playerCode;
-          state.playerCode = data.playerCode;
-          state.headCode = '';
-          state.isHead = false;
-          state.isSpectatorOnly = false;
-          await enterArenaSession(callsign, startWep);
-          showToast(`INFILTRATED ARENA [${data.playerCode}] AS COMBATANT`, 'success');
-          return;
+      cleanupPeer();
+      updateNetBadge('CONNECTING TO ARENA HOST...', 'bg-amber-400');
+
+      peer = new Peer({
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
         }
+      });
 
-        // 2. Check if code matches a Head Code
-        const headRef = doc(db, 'artifacts', appId, 'public', 'data', 'head_codes', inputCode);
-        const headSnap = await getDoc(headRef);
+      peer.on('open', (myPeerId) => {
+        state.localPlayerId = myPeerId;
+        const targetPeerId = `${PEER_PREFIX}${targetRoomCode}`;
+        hostConn = peer.connect(targetPeerId, { reliable: true });
 
-        if (headSnap.exists()) {
-          const headData = headSnap.data();
-          const targetRoomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', headData.playerCode);
-          const targetRoomSnap = await getDoc(targetRoomRef);
-
-          if (targetRoomSnap.exists()) {
-            const rData = targetRoomSnap.data();
-            state.mode = 'multiplayer';
-            state.roomId = rData.playerCode;
-            state.playerCode = rData.playerCode;
-            state.headCode = rData.headCode;
-            state.isHead = true;
-            state.isSpectatorOnly = false;
-            await enterArenaSession(callsign, startWep);
-            showToast(`AUTHENTICATED WITH HEAD CODE // COMMANDER ACCESS GRANTED`, 'head');
-            return;
+        const connectTimeout = setTimeout(() => {
+          if (!state.inGame) {
+            showToast("ROOM NOT FOUND OR HOST OFFLINE", "danger");
+            updateNetBadge('CONNECTION TIMED OUT', 'bg-rose-400');
+            cleanupPeer();
           }
+        }, 6500);
+
+        hostConn.on('open', () => {
+          clearTimeout(connectTimeout);
+          hostConn.send({
+            type: 'join_request',
+            id: myPeerId,
+            name: callsign,
+            weapon: startWep,
+            headCode: suppliedHeadCode
+          });
+
+          // Start ping measurement
+          state.pingInterval = setInterval(() => {
+            if (hostConn && hostConn.open) {
+              hostConn.send({ type: 'ping', t: performance.now() });
+            }
+          }, 2500);
+        });
+
+        hostConn.on('data', (msg) => {
+          handleClientIncomingData(msg, targetRoomCode, callsign, startWep);
+        });
+
+        hostConn.on('close', () => {
+          if (state.inGame) {
+            showToast("DISCONNECTED FROM ARENA HOST", "danger");
+            leaveMatch();
+          }
+        });
+
+        hostConn.on('error', () => {
+          clearTimeout(connectTimeout);
+          showToast("FAILED TO REACH ARENA HOST", "danger");
+        });
+      });
+
+      peer.on('error', (err) => {
+        console.error('Peer client error:', err);
+        showToast("ROOM CODE NOT FOUND // CHECK CODE", "danger");
+        updateNetBadge('WEBRTC RELAY READY', 'bg-emerald-400');
+      });
+    });
+
+    // =========================================================================
+    // PEERJS MESSAGE HANDLERS (HOST & CLIENT)
+    // =========================================================================
+    function broadcastFromHost(payload, excludePeerId = null) {
+      if (state.mode !== 'host') return;
+      clientConns.forEach((conn, peerId) => {
+        if (peerId !== excludePeerId && conn.open) {
+          conn.send(payload);
+        }
+      });
+    }
+
+    function sendToHost(payload) {
+      if (state.mode === 'client' && hostConn && hostConn.open) {
+        hostConn.send(payload);
+      }
+    }
+
+    function handleHostIncomingData(conn, msg) {
+      if (!msg || !msg.type) return;
+
+      if (msg.type === 'ping') {
+        conn.send({ type: 'pong', t: msg.t });
+        return;
+      }
+
+      if (msg.type === 'join_request') {
+        const isCommander = (msg.headCode && msg.headCode === state.headCode);
+        const newPlayer = createPlayerEntity(
+          msg.id,
+          msg.name,
+          false,
+          isCommander,
+          false,
+          msg.weapon || 'm4a1'
+        );
+        state.players[msg.id] = newPlayer;
+
+        // Send full initial snapshot to joining client
+        const serializedPlayers = {};
+        Object.values(state.players).forEach(p => {
+          serializedPlayers[p.id] = serializePlayer(p);
+        });
+
+        conn.send({
+          type: 'welcome',
+          isHead: isCommander,
+          headCode: isCommander ? state.headCode : '',
+          players: serializedPlayers,
+          destroyedObstacles: Array.from(state.destroyedObstacleIds),
+          supplyDrops: state.supplyDrops,
+          zoneActive: state.zone.active,
+          zoneRadius: state.zone.radius
+        });
+
+        // Notify other peers
+        broadcastFromHost({
+          type: 'player_joined',
+          player: serializePlayer(newPlayer)
+        }, msg.id);
+
+        showToast(`${newPlayer.name} ENTERED THE ARENA!`, 'success');
+      } else if (msg.type === 'player_update') {
+        const p = state.players[msg.id];
+        if (p) {
+          p.targetX = msg.x;
+          p.targetY = msg.y;
+          p.targetAngle = msg.angle;
+          p.currentWeapon = msg.currentWeapon;
+          p.inBush = msg.inBush;
+          p.hp = msg.hp;
+          p.armor = msg.armor;
+          p.dead = msg.dead;
+          p.kills = msg.kills;
+          p.deaths = msg.deaths;
+        }
+      } else if (msg.type === 'shoot') {
+        handleRemoteCombatEvent(msg);
+        broadcastFromHost(msg, msg.senderId);
+      } else if (msg.type === 'damage') {
+        handleRemoteCombatEvent(msg);
+        broadcastFromHost(msg, msg.senderId);
+      } else if (msg.type === 'kill') {
+        handleRemoteCombatEvent(msg);
+        broadcastFromHost(msg, msg.senderId);
+      } else if (msg.type === 'head_auth') {
+        if (msg.code === state.headCode && state.players[msg.id]) {
+          state.players[msg.id].isHead = true;
+          conn.send({ type: 'head_granted', headCode: state.headCode });
+          showToast(`${state.players[msg.id].name} AUTHENTICATED AS CO-COMMANDER`, 'head');
+        }
+      } else if (msg.type === 'admin_cmd') {
+        // Verify sender has Head privileges
+        if (state.players[msg.senderId] && state.players[msg.senderId].isHead) {
+          if (msg.cmd === 'supply_drop') headTriggerSupplyDrop();
+          else if (msg.cmd === 'toggle_zone') headToggleZone();
+          else if (msg.cmd === 'spawn_bot') headSpawnBot();
+          else if (msg.cmd === 'reset_arena') headResetArena();
+          else if (msg.cmd === 'kick_player') headKickPlayer(msg.targetId);
+        }
+      }
+    }
+
+    function handleClientIncomingData(msg, roomCode, callsign, startWep) {
+      if (!msg || !msg.type) return;
+
+      if (msg.type === 'pong') {
+        currentPing = Math.max(1, Math.round(performance.now() - msg.t));
+        updateNetBadge(`CONNECTED [${roomCode}] // ${currentPing}ms`, 'bg-emerald-400');
+        return;
+      }
+
+      if (msg.type === 'welcome') {
+        state.mode = 'client';
+        state.roomId = roomCode;
+        state.playerCode = roomCode;
+        state.headCode = msg.headCode || '';
+        state.isHead = !!msg.isHead;
+        state.isSpectatorOnly = false;
+
+        state.players = {};
+        state.obstacles = createInitialObstacles();
+        state.destroyedObstacleIds.clear();
+
+        if (Array.isArray(msg.destroyedObstacles)) {
+          msg.destroyedObstacles.forEach(obsId => {
+            state.destroyedObstacleIds.add(obsId);
+            state.obstacles = state.obstacles.filter(o => o.id !== obsId);
+          });
         }
 
-        showToast("INVALID ACCESS CODE // ROOM NOT FOUND", "danger");
-      } catch (err) {
-        console.error("Join error:", err);
-        showToast("CONNECTION FAILED // CHECK CODE", "danger");
+        state.supplyDrops = msg.supplyDrops || [];
+        state.zone.active = !!msg.zoneActive;
+        state.zone.radius = msg.zoneRadius || 1550;
+
+        Object.values(msg.players || {}).forEach(pData => {
+          const ent = createPlayerEntity(pData.id, pData.name, pData.isBot, pData.isHead, pData.spectatorOnly, pData.currentWeapon);
+          Object.assign(ent, pData);
+          state.players[pData.id] = ent;
+        });
+
+        setupHudForMatch();
+        updateNetBadge(`CONNECTED [${roomCode}]`, 'bg-emerald-400');
+        showToast(state.isHead ? `COMMANDER ACCESS GRANTED [${roomCode}]` : `INFILTRATED ARENA [${roomCode}]`, state.isHead ? 'head' : 'success');
+      } else if (msg.type === 'world_sync') {
+        state.zone.active = !!msg.zoneActive;
+        state.zone.radius = msg.zoneRadius;
+        state.supplyDrops = msg.supplyDrops || [];
+
+        if (Array.isArray(msg.destroyedObstacles)) {
+          msg.destroyedObstacles.forEach(obsId => {
+            if (!state.destroyedObstacleIds.has(obsId)) {
+              state.destroyedObstacleIds.add(obsId);
+              state.obstacles = state.obstacles.filter(o => o.id !== obsId);
+            }
+          });
+        }
+
+        const activeIds = new Set();
+        Object.values(msg.players || {}).forEach(pData => {
+          activeIds.add(pData.id);
+          if (pData.id === state.localPlayerId) return;
+
+          if (!state.players[pData.id]) {
+            state.players[pData.id] = createPlayerEntity(pData.id, pData.name, pData.isBot, pData.isHead, pData.spectatorOnly, pData.currentWeapon);
+          }
+          const target = state.players[pData.id];
+          target.name = pData.name;
+          target.targetX = pData.x;
+          target.targetY = pData.y;
+          target.targetAngle = pData.angle;
+          target.hp = pData.hp;
+          target.armor = pData.armor;
+          target.dead = pData.dead;
+          target.kills = pData.kills || 0;
+          target.deaths = pData.deaths || 0;
+          target.currentWeapon = pData.currentWeapon || 'm4a1';
+          target.isHead = !!pData.isHead;
+          target.spectatorOnly = !!pData.spectatorOnly;
+          target.inBush = !!pData.inBush;
+        });
+
+        Object.keys(state.players).forEach(pid => {
+          if (pid !== state.localPlayerId && !activeIds.has(pid)) {
+            delete state.players[pid];
+          }
+        });
+      } else if (msg.type === 'player_joined') {
+        const pData = msg.player;
+        if (pData && pData.id !== state.localPlayerId) {
+          const ent = createPlayerEntity(pData.id, pData.name, pData.isBot, pData.isHead, pData.spectatorOnly, pData.currentWeapon);
+          Object.assign(ent, pData);
+          state.players[pData.id] = ent;
+          showToast(`${pData.name} JOINED THE BATTLE`, 'info');
+        }
+      } else if (msg.type === 'player_left') {
+        if (state.players[msg.id]) {
+          delete state.players[msg.id];
+        }
+      } else if (msg.type === 'kicked') {
+        showToast("YOU WERE REMOVED BY THE HEAD COMMANDER", "danger");
+        leaveMatch();
+      } else if (msg.type === 'head_granted') {
+        state.isHead = true;
+        state.headCode = msg.headCode;
+        setupHudForMatch();
+        showToast("HEAD COMMANDER PRIVILEGES UNLOCKED!", "head");
+      } else {
+        handleRemoteCombatEvent(msg);
       }
-    });
+    }
 
     // SOLO / BOT PRACTICE
     document.getElementById('soloModeBtn').addEventListener('click', () => {
@@ -1201,6 +1458,7 @@
     });
 
     function launchSoloSession(callsign, startWep, fromHostFallback = false) {
+      cleanupPeer();
       state.mode = 'solo';
       state.playerCode = fromHostFallback ? state.playerCode : generateCode(6);
       state.headCode = fromHostFallback ? state.headCode : generateCode(6);
@@ -1229,111 +1487,6 @@
       showToast("SOLO TACTICAL RANGE ACTIVE // 5 AI BOTS DEPLOYED", "success");
     }
 
-    async function enterArenaSession(callsign, startWep) {
-      state.players = {};
-      state.obstacles = createInitialObstacles();
-      state.destroyedObstacleIds.clear();
-      state.supplyDrops = [];
-      state.zone.active = false;
-      state.zone.radius = 1550;
-
-      const me = createPlayerEntity(
-        state.localPlayerId,
-        callsign,
-        false,
-        state.isHead,
-        state.isSpectatorOnly,
-        startWep
-      );
-      state.players[state.localPlayerId] = me;
-
-      // Register player document in Firestore
-      const playerDocRef = doc(db, 'artifacts', appId, 'public', 'data', `room_${state.roomId}_players`, state.localPlayerId);
-      await setDoc(playerDocRef, serializePlayer(me));
-
-      // Subscribe to Room State (Zone, Destroyed Obstacles, Supply Drops)
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-      const unsubRoom = onSnapshot(roomRef, (snap) => {
-        if (!snap.exists()) return;
-        const data = snap.data();
-        state.zone.active = !!data.zoneActive;
-        if (typeof data.zoneRadius === 'number') state.zone.radius = data.zoneRadius;
-
-        if (Array.isArray(data.destroyedObstacles)) {
-          data.destroyedObstacles.forEach(obsId => {
-            if (!state.destroyedObstacleIds.has(obsId)) {
-              state.destroyedObstacleIds.add(obsId);
-              state.obstacles = state.obstacles.filter(o => o.id !== obsId);
-            }
-          });
-        }
-        if (Array.isArray(data.supplyDrops)) {
-          state.supplyDrops = data.supplyDrops;
-        }
-      }, (err) => console.error("Room snapshot error:", err));
-
-      // Subscribe to All Players in Room
-      const playersColRef = collection(db, 'artifacts', appId, 'public', 'data', `room_${state.roomId}_players`);
-      const unsubPlayers = onSnapshot(playersColRef, (snapshot) => {
-        const activeIds = new Set();
-        snapshot.forEach((docSnap) => {
-          const pData = docSnap.data();
-          activeIds.add(pData.id);
-          if (pData.id === state.localPlayerId) {
-            // Check if kicked by Head
-            if (pData.kicked) {
-              showToast("YOU WERE REMOVED FROM THE ARENA BY THE HEAD COMMANDER", "danger");
-              leaveMatch();
-            }
-            return;
-          }
-
-          if (!state.players[pData.id]) {
-            state.players[pData.id] = createPlayerEntity(pData.id, pData.name, pData.isBot, pData.isHead, pData.spectatorOnly, pData.currentWeapon);
-          }
-          const target = state.players[pData.id];
-          target.name = pData.name;
-          target.targetX = pData.x;
-          target.targetY = pData.y;
-          target.targetAngle = pData.angle;
-          target.hp = pData.hp;
-          target.armor = pData.armor;
-          target.dead = pData.dead;
-          target.kills = pData.kills || 0;
-          target.deaths = pData.deaths || 0;
-          target.currentWeapon = pData.currentWeapon || 'm4a1';
-          target.isHead = !!pData.isHead;
-          target.spectatorOnly = !!pData.spectatorOnly;
-          target.inBush = !!pData.inBush;
-        });
-
-        // Remove disconnected players
-        Object.keys(state.players).forEach(pid => {
-          if (pid !== state.localPlayerId && !activeIds.has(pid)) {
-            delete state.players[pid];
-          }
-        });
-      }, (err) => console.error("Players snapshot error:", err));
-
-      // Subscribe to Realtime Combat Events (Bullets fired, Hits, Kills)
-      const eventsColRef = collection(db, 'artifacts', appId, 'public', 'data', `room_${state.roomId}_events`);
-      const joinTimestamp = Date.now() - 2000;
-      const unsubEvents = onSnapshot(eventsColRef, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            const ev = change.doc.data();
-            if (ev.timestamp < joinTimestamp) return;
-            if (ev.senderId === state.localPlayerId) return;
-
-            handleRemoteCombatEvent(ev);
-          }
-        });
-      }, (err) => console.error("Events snapshot error:", err));
-
-      state.unsubscribers.push(unsubRoom, unsubPlayers, unsubEvents);
-      setupHudForMatch();
-    }
-
     function serializePlayer(p) {
       return {
         id: p.id,
@@ -1350,29 +1503,26 @@
         kills: p.kills,
         deaths: p.deaths,
         currentWeapon: p.currentWeapon,
-        inBush: !!p.inBush,
-        updatedAt: Date.now()
+        inBush: !!p.inBush
       };
     }
 
-    async function broadcastCombatEvent(eventPayload) {
-      if (state.mode !== 'multiplayer' || !firebaseReady || !db) return;
-      try {
-        const eventsColRef = collection(db, 'artifacts', appId, 'public', 'data', `room_${state.roomId}_events`);
-        await addDoc(eventsColRef, {
-          ...eventPayload,
-          senderId: state.localPlayerId,
-          timestamp: Date.now()
-        });
-      } catch (e) {
-        // Silent fail on transient packet drop
+    function broadcastCombatEvent(eventPayload) {
+      const msg = {
+        ...eventPayload,
+        senderId: state.localPlayerId,
+        timestamp: Date.now()
+      };
+      if (state.mode === 'host') {
+        broadcastFromHost(msg);
+      } else if (state.mode === 'client') {
+        sendToHost(msg);
       }
     }
 
     function handleRemoteCombatEvent(ev) {
       const me = state.players[state.localPlayerId];
       if (ev.type === 'shoot') {
-        const wep = WEAPONS[ev.weaponId] || WEAPONS.m4a1;
         const dist = me ? Math.hypot(ev.x - me.x, ev.y - me.y) : 0;
         sfx.playGunshot(ev.weaponId, dist);
 
@@ -1427,17 +1577,10 @@
       updateWeaponHud();
     }
 
-    window.leaveMatch = async function() {
+    window.leaveMatch = function() {
       state.inGame = false;
-      state.unsubscribers.forEach(unsub => unsub());
-      state.unsubscribers = [];
-
-      if (state.mode === 'multiplayer' && firebaseReady && db && state.roomId && state.localPlayerId) {
-        try {
-          const pRef = doc(db, 'artifacts', appId, 'public', 'data', `room_${state.roomId}_players`, state.localPlayerId);
-          await deleteDoc(pRef);
-        } catch (e) {}
-      }
+      cleanupPeer();
+      initNetworkStatus();
 
       document.getElementById('gameHud').classList.add('hidden');
       document.getElementById('respawnOverlay').classList.add('hidden');
@@ -1447,8 +1590,12 @@
     // =========================================================================
     // 9. HEAD COMMANDER ADMIN ACTIONS
     // =========================================================================
-    window.headTriggerSupplyDrop = async function() {
+    window.headTriggerSupplyDrop = function() {
       if (!state.isHead) return;
+      if (state.mode === 'client') {
+        sendToHost({ type: 'admin_cmd', senderId: state.localPlayerId, cmd: 'supply_drop' });
+        return;
+      }
       const drop = {
         id: `drop_${Date.now()}`,
         x: 350 + Math.random() * (ARENA_W - 700),
@@ -1457,15 +1604,14 @@
       };
       state.supplyDrops.push(drop);
       showToast("📦 TACTICAL SUPPLY DROP DEPLOYED INTO ARENA!", "head");
-
-      if (state.mode === 'multiplayer' && firebaseReady && db) {
-        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-        await updateDoc(roomRef, { supplyDrops: state.supplyDrops });
-      }
     };
 
-    window.headToggleZone = async function() {
+    window.headToggleZone = function() {
       if (!state.isHead) return;
+      if (state.mode === 'client') {
+        sendToHost({ type: 'admin_cmd', senderId: state.localPlayerId, cmd: 'toggle_zone' });
+        return;
+      }
       state.zone.active = !state.zone.active;
       if (state.zone.active) {
         state.zone.radius = 1550;
@@ -1474,18 +1620,14 @@
         state.zone.radius = 1550;
         showToast("☢️ PERIMETER HAZARD DEACTIVATED", "info");
       }
-
-      if (state.mode === 'multiplayer' && firebaseReady && db) {
-        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-        await updateDoc(roomRef, {
-          zoneActive: state.zone.active,
-          zoneRadius: state.zone.radius
-        });
-      }
     };
 
     window.headSpawnBot = function() {
       if (!state.isHead) return;
+      if (state.mode === 'client') {
+        sendToHost({ type: 'admin_cmd', senderId: state.localPlayerId, cmd: 'spawn_bot' });
+        return;
+      }
       const botCount = Object.values(state.players).filter(p => p.isBot).length;
       if (botCount >= 10) {
         showToast("MAX BOT CAPACITY REACHED (10)", "danger");
@@ -1498,33 +1640,38 @@
       showToast(`🤖 DEPLOYED AI-UNIT-${botCount + 1} [${randWep.toUpperCase()}]`, "info");
     };
 
-    window.headResetArena = async function() {
+    window.headResetArena = function() {
       if (!state.isHead) return;
+      if (state.mode === 'client') {
+        sendToHost({ type: 'admin_cmd', senderId: state.localPlayerId, cmd: 'reset_arena' });
+        return;
+      }
       performLocalArenaReset();
       showToast("🔄 ARENA OBSTACLES & SCORES RESET", "head");
-      if (state.mode === 'multiplayer' && firebaseReady && db) {
-        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-        await updateDoc(roomRef, {
-          zoneActive: false,
-          zoneRadius: 1550,
-          destroyedObstacles: [],
-          supplyDrops: []
-        });
-        await broadcastCombatEvent({ type: 'reset' });
+      if (state.mode === 'host') {
+        broadcastCombatEvent({ type: 'reset' });
       }
     };
 
-    window.headKickPlayer = async function(targetId) {
+    window.headKickPlayer = function(targetId) {
       if (!state.isHead || targetId === state.localPlayerId) return;
+      if (state.mode === 'client') {
+        sendToHost({ type: 'admin_cmd', senderId: state.localPlayerId, cmd: 'kick_player', targetId });
+        return;
+      }
       const target = state.players[targetId];
       if (!target) return;
 
       if (target.isBot) {
         delete state.players[targetId];
         showToast(`REMOVED ${target.name}`, "info");
-      } else if (state.mode === 'multiplayer' && firebaseReady && db) {
-        const pRef = doc(db, 'artifacts', appId, 'public', 'data', `room_${state.roomId}_players`, targetId);
-        await updateDoc(pRef, { kicked: true });
+      } else if (state.mode === 'host') {
+        const conn = clientConns.get(targetId);
+        if (conn && conn.open) {
+          conn.send({ type: 'kicked' });
+          setTimeout(() => conn.close(), 150);
+        }
+        delete state.players[targetId];
         showToast(`KICKED OPERATOR ${target.name}`, "danger");
       }
     };
@@ -1680,7 +1827,7 @@
         updateWeaponHud();
 
         // Broadcast shot to multiplayer peers
-        if (state.mode === 'multiplayer') {
+        if (state.mode === 'host' || state.mode === 'client') {
           broadcastCombatEvent({
             type: 'shoot',
             shooterId: shooter.id,
@@ -1800,7 +1947,7 @@
       if (victim.id === state.localPlayerId) {
         document.getElementById('killerNameText').textContent = killerName || 'HAZARD';
         document.getElementById('respawnOverlay').classList.remove('hidden');
-        if (state.mode === 'multiplayer') {
+        if (state.mode === 'host' || state.mode === 'client') {
           broadcastCombatEvent({
             type: 'kill',
             killerId,
@@ -1953,7 +2100,7 @@
           if (state.keys['KeyA'] || state.keys['ArrowLeft']) moveX -= 1;
           if (state.keys['KeyD'] || state.keys['ArrowRight']) moveX += 1;
 
-          // Touch joystick merge
+          // Left Touch Joystick merge
           if (touchJoy.active) {
             moveX += touchJoy.dx;
             moveY += touchJoy.dy;
@@ -1972,15 +2119,28 @@
           p.x += p.vx * dt;
           p.y += p.vy * dt;
 
-          // Update aim angle toward mouse world coordinates
-          state.mouse.worldX = state.camera.x + (state.mouse.x - canvas.width / 2) / state.camera.zoom;
-          state.mouse.worldY = state.camera.y + (state.mouse.y - canvas.height / 2) / state.camera.zoom;
-          p.angle = Math.atan2(state.mouse.worldY - p.y, state.mouse.worldX - p.x);
+          // Aim Direction: Right Touch Joystick overrides mouse cursor while active
+          if (aimJoy.active && (Math.abs(aimJoy.dx) > 0.12 || Math.abs(aimJoy.dy) > 0.12)) {
+            p.angle = Math.atan2(aimJoy.dy, aimJoy.dx);
+            state.mouse.worldX = p.x + Math.cos(p.angle) * 260;
+            state.mouse.worldY = p.y + Math.sin(p.angle) * 260;
+            state.mouse.x = canvas.width / 2 + (state.mouse.worldX - state.camera.x) * state.camera.zoom;
+            state.mouse.y = canvas.height / 2 + (state.mouse.worldY - state.camera.y) * state.camera.zoom;
 
-          // Shooting trigger
-          if (state.mouse.down) {
-            if (wep.auto || state.mouse.justPressed) {
+            // Auto-fire when right stick is pushed past 55% outer ring
+            if (aimJoy.mag > 0.55) {
               attemptFireWeapon(p, true);
+            }
+          } else {
+            state.mouse.worldX = state.camera.x + (state.mouse.x - canvas.width / 2) / state.camera.zoom;
+            state.mouse.worldY = state.camera.y + (state.mouse.y - canvas.height / 2) / state.camera.zoom;
+            p.angle = Math.atan2(state.mouse.worldY - p.y, state.mouse.worldX - p.x);
+
+            // Desktop mouse or dedicated Fire button trigger
+            if (state.mouse.down) {
+              if (wep.auto || state.mouse.justPressed) {
+                attemptFireWeapon(p, true);
+              }
             }
           }
         }
@@ -2095,10 +2255,6 @@
                 spawnSparks(obs.x + obs.w / 2, obs.y + obs.h / 2, '#d97706', 18);
                 state.obstacles.splice(oIdx, 1);
                 state.destroyedObstacleIds.add(obs.id);
-                if (state.mode === 'multiplayer' && firebaseReady && db && b.ownerId === state.localPlayerId) {
-                  const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', state.roomId);
-                  updateDoc(roomRef, { destroyedObstacles: Array.from(state.destroyedObstacleIds) }).catch(() => {});
-                }
               }
               bulletDestroyed = true;
               break;
@@ -2156,7 +2312,7 @@
                 if (target.hp <= 0 && !target.dead) {
                   handlePlayerDeath(target, b.ownerId, b.ownerName, wepName);
                 }
-              } else if (state.mode === 'multiplayer') {
+              } else if (state.mode === 'host' || state.mode === 'client') {
                 // Send hit confirmation to remote human player
                 spawnBloodParticles(target.x, target.y, 7);
                 broadcastCombatEvent({
@@ -2231,11 +2387,28 @@
       // 6. Update Vitals HUD & Leaderboard
       updateVitalsAndLeaderboard();
 
-      // 7. Periodic Multiplayer State Sync (~15Hz)
-      if (state.mode === 'multiplayer' && firebaseReady && db && me && now - state.lastSyncTime > 65) {
+      // 7. Periodic PeerJS Multiplayer Sync (~20Hz)
+      if (me && now - state.lastSyncTime > 50) {
         state.lastSyncTime = now;
-        const pRef = doc(db, 'artifacts', appId, 'public', 'data', `room_${state.roomId}_players`, state.localPlayerId);
-        setDoc(pRef, serializePlayer(me), { merge: true }).catch(() => {});
+        if (state.mode === 'host') {
+          const serializedPlayers = {};
+          Object.values(state.players).forEach(p => {
+            serializedPlayers[p.id] = serializePlayer(p);
+          });
+          broadcastFromHost({
+            type: 'world_sync',
+            players: serializedPlayers,
+            zoneActive: state.zone.active,
+            zoneRadius: state.zone.radius,
+            destroyedObstacles: Array.from(state.destroyedObstacleIds),
+            supplyDrops: state.supplyDrops
+          });
+        } else if (state.mode === 'client') {
+          sendToHost({
+            type: 'player_update',
+            ...serializePlayer(me)
+          });
+        }
       }
     }
 
@@ -2732,44 +2905,108 @@
       }
     });
 
-    // Touch Joystick & Fire Support
-    const touchJoy = { active: false, dx: 0, dy: 0 };
+    // Dual Virtual Touch Joysticks (Multi-touch Safe via Touch Identifiers)
+    const touchJoy = { active: false, id: null, dx: 0, dy: 0 };
+    const aimJoy = { active: false, id: null, dx: 0, dy: 0, mag: 0 };
+
     const touchMoveZone = document.getElementById('touchMoveZone');
     const touchMoveKnob = document.getElementById('touchMoveKnob');
+    const touchAimZone = document.getElementById('touchAimZone');
+    const touchAimKnob = document.getElementById('touchAimKnob');
     const touchFireBtn = document.getElementById('touchFireBtn');
+
+    function handleJoystickMove(touch, zoneEl, knobEl, joyState) {
+      const rect = zoneEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const maxR = rect.width * 0.36;
+      const dx = touch.clientX - cx;
+      const dy = touch.clientY - cy;
+      const rawDist = Math.hypot(dx, dy);
+      const clampedDist = Math.min(maxR, rawDist);
+      const ang = Math.atan2(dy, dx);
+
+      joyState.dx = (Math.cos(ang) * clampedDist) / maxR;
+      joyState.dy = (Math.sin(ang) * clampedDist) / maxR;
+      joyState.mag = clampedDist / maxR;
+      knobEl.style.transform = `translate(${Math.cos(ang) * clampedDist}px, ${Math.sin(ang) * clampedDist}px)`;
+    }
 
     if (touchMoveZone) {
       touchMoveZone.addEventListener('touchstart', (e) => {
         e.preventDefault();
+        sfx.init();
+        const t = e.changedTouches[0];
         touchJoy.active = true;
+        touchJoy.id = t.identifier;
+        handleJoystickMove(t, touchMoveZone, touchMoveKnob, touchJoy);
       }, { passive: false });
 
       touchMoveZone.addEventListener('touchmove', (e) => {
         e.preventDefault();
-        const rect = touchMoveZone.getBoundingClientRect();
-        const touch = e.touches[0];
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = touch.clientX - cx;
-        const dy = touch.clientY - cy;
-        const dist = Math.min(40, Math.hypot(dx, dy));
-        const ang = Math.atan2(dy, dx);
-        touchJoy.dx = (Math.cos(ang) * dist) / 40;
-        touchJoy.dy = (Math.sin(ang) * dist) / 40;
-        touchMoveKnob.style.transform = `translate(${Math.cos(ang) * dist}px, ${Math.sin(ang) * dist}px)`;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          if (t.identifier === touchJoy.id) {
+            handleJoystickMove(t, touchMoveZone, touchMoveKnob, touchJoy);
+          }
+        }
       }, { passive: false });
 
-      touchMoveZone.addEventListener('touchend', () => {
-        touchJoy.active = false;
-        touchJoy.dx = 0;
-        touchJoy.dy = 0;
-        touchMoveKnob.style.transform = `translate(0px, 0px)`;
-      });
+      const endMoveTouch = (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === touchJoy.id) {
+            touchJoy.active = false;
+            touchJoy.id = null;
+            touchJoy.dx = 0;
+            touchJoy.dy = 0;
+            touchMoveKnob.style.transform = `translate(0px, 0px)`;
+          }
+        }
+      };
+      touchMoveZone.addEventListener('touchend', endMoveTouch);
+      touchMoveZone.addEventListener('touchcancel', endMoveTouch);
+    }
+
+    if (touchAimZone) {
+      touchAimZone.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        sfx.init();
+        const t = e.changedTouches[0];
+        aimJoy.active = true;
+        aimJoy.id = t.identifier;
+        handleJoystickMove(t, touchAimZone, touchAimKnob, aimJoy);
+      }, { passive: false });
+
+      touchAimZone.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          if (t.identifier === aimJoy.id) {
+            handleJoystickMove(t, touchAimZone, touchAimKnob, aimJoy);
+          }
+        }
+      }, { passive: false });
+
+      const endAimTouch = (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === aimJoy.id) {
+            aimJoy.active = false;
+            aimJoy.id = null;
+            aimJoy.dx = 0;
+            aimJoy.dy = 0;
+            aimJoy.mag = 0;
+            touchAimKnob.style.transform = `translate(0px, 0px)`;
+          }
+        }
+      };
+      touchAimZone.addEventListener('touchend', endAimTouch);
+      touchAimZone.addEventListener('touchcancel', endAimTouch);
     }
 
     if (touchFireBtn) {
       touchFireBtn.addEventListener('touchstart', (e) => {
         e.preventDefault();
+        sfx.init();
         state.mouse.down = true;
         state.mouse.justPressed = true;
       }, { passive: false });
@@ -2777,14 +3014,6 @@
         state.mouse.down = false;
       });
     }
-
-    canvas.addEventListener('touchmove', (e) => {
-      if (e.touches.length > 0) {
-        const t = e.touches[e.touches.length - 1];
-        state.mouse.x = t.clientX;
-        state.mouse.y = t.clientY;
-      }
-    }, { passive: true });
 
     // =========================================================================
     // 15. MAIN ANIMATION LOOP
