@@ -2,6 +2,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Cover Fire Arena</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&display=swap">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
 :root{--bg:#eef1f0;--ink:#16211f;--card:#fff;--mut:#55655f;--ac:#d9480f;--line:#c4d0cc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#121a19;--ink:#e8f0ee;--card:#1c2726;--mut:#98a9a5;--line:#31413e}}
@@ -59,6 +60,182 @@ The head starts a timed 3 minute match with the Start match button.</div>
 <div id="ov"></div>
 </div>
 <script>
+class PeerRoom {
+  constructor(roomCode, name, role, hh) {
+    this.roomCode = roomCode;
+    this.name = name;
+    this.role = role;
+    this.hh = hh;
+    this.myId = 'p_' + Math.random().toString(36).substring(2, 9);
+    this.peersMap = new Map();
+    this.listeners = {};
+    this.isHead = (role === 'head');
+    this.headPeerId = 'cf_head_' + roomCode;
+  }
+
+  async init() {
+    return new Promise((resolve, reject) => {
+      const myPeerId = this.isHead ? this.headPeerId : this.myId;
+      this.peer = new Peer(myPeerId, { debug: 0 });
+
+      this.peer.on('error', err => {
+        if (err.type === 'unavailable-id' && this.isHead) {
+          reject(new Error('Head already exists for this code.'));
+        } else if (!this.isHead && err.type === 'peer-unavailable') {
+          reject(new Error('Head not found.'));
+        }
+      });
+
+      this.peer.on('open', id => {
+        this.myId = id;
+        this.peersMap.set(this.myId, {
+          peer: this.myId,
+          isMe: true,
+          sameTab: true,
+          kind: 'viewer',
+          presence: { n: this.name, role: this.role, hh: this.hh, al: 0 }
+        });
+
+        if (this.isHead) {
+          this.peer.on('connection', conn => { this.setupConnection(conn); });
+          resolve(this);
+        } else {
+          const conn = this.peer.connect(this.headPeerId, { reliable: true });
+          conn.on('open', () => {
+            this.setupConnection(conn);
+            resolve(this);
+          });
+          conn.on('error', () => { reject(new Error('Could not connect to head.')); });
+          setTimeout(() => { if (!this.connToHead) reject(new Error('Connection timeout to head.')); }, 5000);
+        }
+      });
+    });
+  }
+
+  setupConnection(conn) {
+    conn.on('data', data => { this.handleData(conn.peer, data); });
+    conn.on('close', () => {
+      for (const [id, p] of this.peersMap.entries()) {
+        if (p.conn === conn || id === conn.peer) { this.peersMap.delete(id); break; }
+      }
+      this.broadcastState();
+    });
+    
+    if (!this.isHead) {
+      this.connToHead = conn;
+      this.connToHead.send({ type: 'presence', presence: this.peersMap.get(this.myId).presence });
+    }
+  }
+
+  handleData(fromPeerId, data) {
+    if (this.isHead) {
+      if (data.type === 'presence') {
+        let p = this.peersMap.get(fromPeerId);
+        if (!p) {
+          p = { peer: fromPeerId, isMe: false, sameTab: true, kind: 'viewer', presence: data.presence };
+          this.peersMap.set(fromPeerId, p);
+        } else {
+          p.presence = data.presence;
+        }
+        this.broadcastState();
+      } else if (data.type === 'emit') {
+        this.broadcastEvent(data.event, data.data, fromPeerId);
+        this.triggerListener(data.event, { peer: fromPeerId, data: data.data, isMe: false });
+      }
+    } else {
+      if (data.type === 'state_sync') {
+        const remotePeers = data.peers;
+        const activeIds = new Set(remotePeers.map(p => p.peer));
+        activeIds.add(this.myId);
+        for (const rp of remotePeers) {
+          if (rp.peer === this.myId) continue;
+          let existing = this.peersMap.get(rp.peer);
+          if (!existing) {
+            this.peersMap.set(rp.peer, { peer: rp.peer, isMe: false, sameTab: true, kind: 'viewer', presence: rp.presence });
+          } else {
+            existing.presence = rp.presence;
+          }
+        }
+        for (const id of this.peersMap.keys()) {
+          if (!activeIds.has(id)) this.peersMap.delete(id);
+        }
+      } else if (data.type === 'emit') {
+        this.triggerListener(data.event, { peer: data.from, data: data.data, isMe: (data.from === this.myId) });
+      }
+    }
+  }
+
+  getConnByPeer(peerId) {
+    for (const connList of Object.values(this.peer.connections)) {
+      for (const c of connList) { if (c.peer === peerId) return c; }
+    }
+    return null;
+  }
+
+  broadcastState() {
+    if (!this.isHead) return;
+    const peerList = [];
+    for (const [id, p] of this.peersMap.entries()) { peerList.push({ peer: id, presence: p.presence }); }
+    const payload = { type: 'state_sync', peers: peerList };
+    for (const id of this.peersMap.keys()) {
+      if (id === this.myId) continue;
+      const conn = this.getConnByPeer(id);
+      if (conn && conn.open) conn.send(payload);
+    }
+  }
+
+  broadcastEvent(event, data, fromId) {
+    if (this.isHead) {
+      for (const id of this.peersMap.keys()) {
+        if (id === this.myId || id === fromId) continue;
+        const conn = this.getConnByPeer(id);
+        if (conn && conn.open) conn.send({ type: 'emit', event, data, from: fromId });
+      }
+    }
+  }
+
+  peers() {
+    const list = [];
+    for (const p of this.peersMap.values()) {
+      list.push({ peer: p.peer, isMe: p.isMe, sameTab: p.sameTab, kind: p.kind, presence: p.presence });
+    }
+    return list;
+  }
+
+  async presence(pObj) {
+    const me = this.peersMap.get(this.myId);
+    if (me) me.presence = { ...me.presence, ...pObj };
+    if (this.isHead) {
+      this.broadcastState();
+    } else if (this.connToHead && this.connToHead.open) {
+      this.connToHead.send({ type: 'presence', presence: me.presence });
+    }
+  }
+
+  emit(event, data) {
+    if (this.isHead) {
+      this.broadcastEvent(event, data, this.myId);
+    } else {
+      if (this.connToHead && this.connToHead.open) {
+        this.connToHead.send({ type: 'emit', event, data });
+      }
+    }
+  }
+
+  on(event, cb) {
+    if (!this.listeners[event]) this.listeners[event] = [];
+    this.listeners[event].push(cb);
+  }
+
+  triggerListener(event, msg) {
+    if (this.listeners[event]) {
+      for (const cb of this.listeners[event]) cb(msg);
+    }
+  }
+
+  async leave() { if (this.peer) this.peer.destroy(); }
+}
+
 const $=s=>document.querySelector(s),W=1800,H=1200,R=14;
 const G=[
 {n:"M9 Pistol",d:26,rof:260,mag:12,res:60,rl:1.3,sp:.012,kick:.03,max:.1,rec:.3,v:950,rng:700,pel:1,auto:0,spd:1,f:260},
@@ -146,30 +323,4 @@ onkeyup=e=>K[e.code]=0;
 $("#rl").onclick=reload;$("#sw").onclick=()=>swap(P.gun+1);
 $("#go").onclick=()=>room.emit("ctl",{left:180,rst:1});
 function tab(h){head=h;$("#t1").className=h?"":"on";$("#t2").className=h?"on":"";$("#hl").hidden=!h;$("#go1").textContent=h?"Host match":"Join match";$("#err").textContent=""}
-$("#t1").onclick=()=>tab(0);$("#t2").onclick=()=>tab(1);
-async function enter(){
-const err=m=>{$("#err").textContent=m},n=$("#nm").value.trim().slice(0,12)||"Player",pc=$("#pc").value.trim().toLowerCase(),hc=$("#hc").value.trim();
-if(pc.length<3)return err("The player code needs at least 3 characters.");
-if(head&&(hc.length<3||hc===pc.toLowerCase()))return err("The head code needs 3+ characters and must differ from the player code.");
-err("Connecting…");
-let rm=null;try{rm=window.claude?await window.claude.use("room"):null}catch(e){}
-if(!rm)return err("Live multiplayer isn’t available. Open the shared link while signed in to Claude.");
-try{room=await rm.join("g"+hash(pc).toString(36))}catch(e){room=null;return err("Couldn’t open the room. Try again in a moment.")}
-name=n;role=head?"head":"player";const hh=head?hash(hc):0;
-const headHH=()=>{const h=room.peers().filter(p=>p.presence.role==="head").sort((a,b)=>a.updatedAt-b.updatedAt)[0];return h&&h.presence.hh};
-room.on("shot",m=>{if(m.isMe)return;const d=m.data||{},g=G[d.g|0];if(g&&isFinite(d.x)&&isFinite(d.y)&&isFinite(d.a))fire(+d.x,+d.y,+d.a,Math.min(.3,Math.abs(+d.b||g.sp)),g,0)});
-room.on("hit",m=>{const d=m.data||{};if(d.to!==myPeer()||!P.al||over)return;P.hp-=Math.max(0,Math.min(120,+d.d||0));P.hurt=.5;if(P.hp<=0){P.al=0;P.d++;P.resp=3;room.emit("kill",{to:m.peer,k:nameOf(m.peer),v:name})}});
-room.on("kill",m=>{const d=m.data||{};feed(String(d.k).slice(0,12)+" ▸ "+String(d.v).slice(0,12));if(d.to===myPeer()&&!over)P.k++});
-room.on("ctl",m=>{const p=room.peers().find(q=>q.peer===m.peer);if(!p||p.presence.role!=="head"||p.presence.hh!==headHH())return;const d=m.data||{};endAt=Date.now()+Math.max(0,Math.min(600,+d.left||0))*1000;if(d.rst){P.k=0;P.d=0;over=0;$("#ov").textContent="";spawn()}});
-await room.presence({n:name,role,hh,x:0,y:0,al:0});
-await new Promise(r=>setTimeout(r,1500));
-const hs=room.peers().filter(p=>p.presence.role==="head");
-if(!head&&!hs.length){await room.leave();room=null;return err("No head has opened this code yet. Ask the head to host first.")}
-if(head&&hs.some(p=>!p.isMe&&p.presence.hh!==hh)){await room.leave();room=null;return err("That player code is already hosted with a different head code.")}
-build(hash(pc));size();addEventListener("resize",size);spawn();
-$("#lobby").hidden=true;cv.style.display="block";$("#hud").style.display="block";if(head)$("#go").style.display="block";
-setInterval(()=>{if(head&&endAt>Date.now())room.emit("ctl",{left:Math.round((endAt-Date.now())/1000)})},3000);
-requestAnimationFrame(loop)}
-$("#go1").onclick=enter;
-</script></body></html>
-
+$("#t1").oncli
