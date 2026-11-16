@@ -1,1 +1,175 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cover Fire Arena</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&display=swap">
+<style>
+:root{--bg:#eef1f0;--ink:#16211f;--card:#fff;--mut:#55655f;--ac:#d9480f;--line:#c4d0cc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#121a19;--ink:#e8f0ee;--card:#1c2726;--mut:#98a9a5;--line:#31413e}}
+:root[data-theme=dark]{--bg:#121a19;--ink:#e8f0ee;--card:#1c2726;--mut:#98a9a5;--line:#31413e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.45 "Chakra Petch",system-ui,sans-serif}
+#lobby{max-width:440px;margin:0 auto;padding:28px 20px}
+h1{font-size:36px;line-height:1.05;margin:0 0 8px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 14px;border-radius:6px}
+.tabs{display:flex;gap:8px;margin:20px 0 10px}.tabs button{flex:1}
+button.on,#go1{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700}
+label{display:block;margin:12px 0;color:var(--mut);font-size:14px}
+input{display:block;width:100%;margin-top:4px;padding:12px;font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px}
+#go1{width:100%;padding:14px;margin-top:6px}
+#err{color:#e03131;min-height:1.4em}
+.help{color:var(--mut);font-size:14px;line-height:1.7;margin-top:18px}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:none}
+#hud{position:fixed;inset:0;pointer-events:none;display:none;color:#fff;text-shadow:0 1px 3px #000}
+#hud>*{position:absolute}
+#top{top:calc(8px + env(safe-area-inset-top,0px));right:10px;text-align:right;font-size:13px}
+#tm{font-size:22px;font-weight:700}
+#sb{list-style:none;margin:4px 0 0;padding:0}
+#feed{top:calc(8px + env(safe-area-inset-top,0px));left:10px;font-size:13px}
+#bot{left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+#hp{width:150px;height:8px;background:#0007;border-radius:4px;overflow:hidden}
+#hp i{display:block;height:100%;width:100%;background:#7ee08a}
+#am{font-size:28px;font-weight:700}
+#btns{right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;pointer-events:auto}
+#btns button{background:#0009;color:#fff;border-color:#fff5}
+#go{left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);pointer-events:auto;background:var(--ac);color:#fff;border-color:var(--ac);display:none}
+#ov{inset:0;display:grid;place-items:center;text-align:center;font-size:26px;font-weight:700;padding:20px}
+</style></head><body>
+<main id="lobby">
+<h1>Cover Fire Arena</h1>
+<p>Duck behind walls and crates. Enemies you can’t see can’t be shot, and they can’t see you.</p>
+<div class="tabs"><button id="t1" class="on">Join as player</button><button id="t2">Host as head</button></div>
+<label>Your name<input id="nm" maxlength="12" autocomplete="off"></label>
+<label>Player code (share this with players)<input id="pc" maxlength="20" autocapitalize="off" autocomplete="off"></label>
+<label id="hl" hidden>Head code (keep this secret)<input id="hc" maxlength="20" type="password" autocomplete="off"></label>
+<button id="go1">Join match</button>
+<p id="err" role="alert"></p>
+<div class="help">The head picks both codes and opens the match first. Players then join with the player code.<br>
+Move: WASD or left thumb. Aim: mouse or right thumb (hold to fire).<br>
+R reloads. Keys 1 to 5 or Q switch weapons. Shift sprints.<br>
+The head starts a timed 3 minute match with the Start match button.</div>
+</main>
+<canvas id="c"></canvas>
+<div id="hud">
+<div id="top"><div id="tm"></div><ol id="sb"></ol></div>
+<div id="feed"></div>
+<div id="bot"><div id="hp"><i></i></div><div id="am"></div><div id="wn"></div></div>
+<div id="btns"><button id="rl">Reload</button><button id="sw">Swap</button></div>
+<button id="go">Start match</button>
+<div id="ov"></div>
+</div>
+<script>
+const $=s=>document.querySelector(s),W=1800,H=1200,R=14;
+const G=[
+{n:"M9 Pistol",d:26,rof:260,mag:12,res:60,rl:1.3,sp:.012,kick:.03,max:.1,rec:.3,v:950,rng:700,pel:1,auto:0,spd:1,f:260},
+{n:"MP7 SMG",d:14,rof:70,mag:30,res:150,rl:1.7,sp:.03,kick:.02,max:.2,rec:.35,v:850,rng:520,pel:1,auto:1,spd:.95,f:300},
+{n:"AK Rifle",d:22,rof:105,mag:30,res:120,rl:2.2,sp:.015,kick:.016,max:.14,rec:.3,v:1100,rng:900,pel:1,auto:1,spd:.9,f:200},
+{n:"Pump Shotgun",d:12,rof:850,mag:6,res:24,rl:2.4,sp:.09,kick:.1,max:.15,rec:.4,v:800,rng:380,pel:8,auto:0,spd:.92,f:140},
+{n:"Bolt Sniper",d:95,rof:1500,mag:5,res:15,rl:3,sp:.002,kick:.05,max:.08,rec:.3,v:2400,rng:1600,pel:1,auto:0,spd:.8,f:110}];
+let room,name,role,head=0,O=[],B=[],ammo,over=0,endAt=0,mouse=0,useM=0,myP,ac;
+const P={x:0,y:0,a:0,hp:100,al:1,gun:2,k:0,d:0,bloom:0,rel:0,ls:0,resp:0,shake:0,flash:0,hurt:0,mv:0,was:0};
+const K={},M={x:0,y:0},S={m:null,a:null},sm=new Map(),cv=$("#c"),x=cv.getContext("2d");
+let dpr=1;
+function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function build(s){const r=rng(s);O=[];let t=0;while(O.length<16&&t++<500){const w=70+r()*160|0,h=50+r()*130|0,px=120+r()*(W-240-w)|0,py=120+r()*(H-240-h)|0;if(O.every(o=>px>o.x+o.w+90||px+w<o.x-90||py>o.y+o.h+90||py+h<o.y-90))O.push({x:px,y:py,w,h})}}
+function push(p){p.x=Math.max(R,Math.min(W-R,p.x));p.y=Math.max(R,Math.min(H-R,p.y));for(const o of O){const cx=Math.max(o.x,Math.min(p.x,o.x+o.w)),cy=Math.max(o.y,Math.min(p.y,o.y+o.h)),dx=p.x-cx,dy=p.y-cy,d=Math.hypot(dx,dy);if(d<R){if(d>0){p.x+=dx/d*(R-d);p.y+=dy/d*(R-d)}else p.x=o.x-R}}}
+function segRect(x0,y0,x1,y1,o){let t0=0,t1=1;for(const[a,b,lo,hi]of[[x0,x1-x0,o.x,o.x+o.w],[y0,y1-y0,o.y,o.y+o.h]]){if(Math.abs(b)<1e-9){if(a<lo||a>hi)return 2}else{let u=(lo-a)/b,v=(hi-a)/b;if(u>v)[u,v]=[v,u];t0=Math.max(t0,u);t1=Math.min(t1,v);if(t0>t1)return 2}}return t0}
+const wallT=(a,b,c,d)=>Math.min(2,...O.map(o=>segRect(a,b,c,d,o)));
+const los=(a,b)=>wallT(a.x,a.y,b.x,b.y)>1;
+const others=()=>room.peers().filter(p=>!p.isMe&&p.kind==="viewer"&&p.presence.x!=null);
+const myPeer=()=>myP||(myP=(room.peers().find(p=>p.isMe&&p.sameTab)||{}).peer);
+const nameOf=id=>{const p=room.peers().find(q=>q.peer===id);return p&&p.presence.n?String(p.presence.n).slice(0,12):"Player"};
+function snd(f,d){try{ac=ac||new AudioContext();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.type="sawtooth";o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(40,t+d);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(t+d)}catch(e){}}
+function spawn(){let bx=60,by=60,best=-1;for(let i=0;i<30;i++){const px=80+Math.random()*(W-160),py=80+Math.random()*(H-160);if(O.some(o=>px>o.x-30&&px<o.x+o.w+30&&py>o.y-30&&py<o.y+o.h+30))continue;const s=Math.min(1e4,...others().map(p=>Math.hypot(p.presence.x-px,p.presence.y-py)));if(s>best){best=s;bx=px;by=py}}
+P.x=bx;P.y=by;P.hp=100;P.al=1;P.rel=0;P.bloom=0;ammo=G.map(g=>({m:g.mag,r:g.res}))}
+function fire(px,py,a,sp,g,mine){for(let i=0;i<g.pel;i++){const an=a+(Math.random()-.5)*2*sp,vx=Math.cos(an)*g.v,vy=Math.sin(an)*g.v;B.push({x:px+Math.cos(an)*22,y:py+Math.sin(an)*22,vx,vy,d:g.d,rng:g.rng,tr:0,mine})}}
+function shoot(g,a){const t=performance.now();if(t-P.ls<g.rof||P.rel>0||a.m<=0)return;P.ls=t;a.m--;const sp=g.sp+P.bloom+P.mv*.02;
+fire(P.x,P.y,P.a,sp,g,1);room.emit("shot",{x:P.x|0,y:P.y|0,a:+P.a.toFixed(3),g:P.gun,b:+sp.toFixed(3)});
+P.bloom=Math.min(g.max,P.bloom+g.kick);P.shake=Math.min(1,P.shake+g.kick*6+.1);P.flash=.06;snd(g.f,.15)}
+function reload(){if(P.rel>0||!P.al)return;const a=ammo[P.gun],g=G[P.gun];if(a.m<g.mag&&a.r>0)P.rel=g.rl}
+function swap(n){P.gun=(n+5)%5;P.rel=0}
+function stepB(b,dt){const nx=b.x+b.vx*dt,ny=b.y+b.vy*dt,t=wallT(b.x,b.y,nx,ny);if(t<=1)return 0;
+if(b.mine&&!over){const dx=nx-b.x,dy=ny-b.y,l=dx*dx+dy*dy||1;for(const p of others()){const q=p.presence;if(!q.al)continue;const u=Math.max(0,Math.min(1,((q.x-b.x)*dx+(q.y-b.y)*dy)/l));if(Math.hypot(b.x+dx*u-q.x,b.y+dy*u-q.y)<R+2){room.emit("hit",{to:p.peer,d:Math.round(b.d*(1-.5*Math.min(1,b.tr/b.rng)))});return 0}}}
+b.tr+=Math.hypot(nx-b.x,ny-b.y);b.x=nx;b.y=ny;return b.tr<b.rng}
+function update(dt){
+B=B.filter(b=>stepB(b,dt));
+P.shake=Math.max(0,P.shake-dt*6);P.flash=Math.max(0,P.flash-dt);P.hurt=Math.max(0,P.hurt-dt*2);
+if(over)return;
+if(!P.al){if((P.resp-=dt)<=0)spawn();return}
+const g=G[P.gun],a=ammo[P.gun];
+let mx=(K.KeyD?1:0)-(K.KeyA?1:0),my=(K.KeyS?1:0)-(K.KeyW?1:0),trig=mouse;
+if(S.m){mx=S.m.dx;my=S.m.dy}
+if(S.a){if(Math.hypot(S.a.dx,S.a.dy)>.25){P.a=Math.atan2(S.a.dy,S.a.dx);trig=1}}else if(useM)P.a=Math.atan2(M.y-innerHeight/2,M.x-innerWidth/2);
+const n=Math.hypot(mx,my),l=Math.min(1,n),sp=210*g.spd*(K.ShiftLeft?1.4:1);
+if(n>0){P.x+=mx/n*l*sp*dt;P.y+=my/n*l*sp*dt;push(P)}
+P.mv=l;P.bloom=Math.max(0,P.bloom-g.rec*dt);
+if(P.rel>0){P.rel-=dt;if(P.rel<=0){const t=Math.min(g.mag-a.m,a.r);a.m+=t;a.r-=t}}
+if(trig&&(g.auto||!P.was))shoot(g,a);P.was=trig;
+if(a.m==0&&a.r>0&&P.rel<=0&&!trig)reload()}
+function pl(px,py,a,c,g){const L=16+(g==2||g==4?14:g==3?8:g==1?4:0);x.strokeStyle="#0d1211";x.lineWidth=5;x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.cos(a)*L,py+Math.sin(a)*L);x.stroke();x.fillStyle=c;x.beginPath();x.arc(px,py,R,0,7);x.fill()}
+function draw(){
+const w=innerWidth,h=innerHeight;x.setTransform(dpr,0,0,dpr,0,0);x.fillStyle="#0e1514";x.fillRect(0,0,w,h);
+const sh=P.shake*8;x.save();x.translate(w/2-P.x+(Math.random()-.5)*sh,h/2-P.y+(Math.random()-.5)*sh);
+x.fillStyle="#27342f";x.fillRect(0,0,W,H);
+x.strokeStyle="#ffffff10";x.lineWidth=1;x.beginPath();for(let i=0;i<=W;i+=100){x.moveTo(i,0);x.lineTo(i,H)}for(let i=0;i<=H;i+=100){x.moveTo(0,i);x.lineTo(W,i)}x.stroke();
+x.strokeStyle="#d9480f";x.lineWidth=5;x.strokeRect(0,0,W,H);
+O.forEach((o,i)=>{x.fillStyle=i%3?"#6b7d76":"#a87b38";x.fillRect(o.x,o.y,o.w,o.h);x.strokeStyle="#0007";x.lineWidth=3;x.strokeRect(o.x,o.y,o.w,o.h)});
+x.lineWidth=2;for(const b of B){x.strokeStyle=b.mine?"#ffe08a":"#ffb4a0";x.beginPath();x.moveTo(b.x,b.y);x.lineTo(b.x-b.vx*.02,b.y-b.vy*.02);x.stroke()}
+x.textAlign="center";x.font="12px sans-serif";
+for(const p of others()){const q=p.presence;if(!q.al||Math.hypot(q.x-P.x,q.y-P.y)>800||!los(P,q))continue;
+let s=sm.get(p.peer);if(!s)sm.set(p.peer,s={x:q.x,y:q.y});s.x+=(q.x-s.x)*.35;s.y+=(q.y-s.y)*.35;
+pl(s.x,s.y,q.a||0,"#ff6b3d",q.g);x.fillStyle="#0008";x.fillRect(s.x-16,s.y-28,32,4);x.fillStyle="#ff6b3d";x.fillRect(s.x-16,s.y-28,32*Math.max(0,q.hp||0)/100,4);x.fillStyle="#fff";x.fillText(String(q.n||"").slice(0,12),s.x,s.y-33)}
+if(P.al){pl(P.x,P.y,P.a,"#5ad1ff",P.gun);if(P.flash>0){x.fillStyle="#ffd34d";x.beginPath();x.arc(P.x+Math.cos(P.a)*32,P.y+Math.sin(P.a)*32,7,0,7);x.fill()}}
+x.restore();
+const gr=x.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.75);gr.addColorStop(0,"#0000");gr.addColorStop(1,"#000c");x.fillStyle=gr;x.fillRect(0,0,w,h);
+if(P.hurt>0){x.fillStyle=`rgba(255,40,20,${P.hurt*.4})`;x.fillRect(0,0,w,h)}}
+function feed(t){const d=document.createElement("div");d.textContent=t;$("#feed").append(d);setTimeout(()=>d.remove(),5000)}
+function hud(){const g=G[P.gun],a=ammo[P.gun],left=endAt?Math.max(0,Math.ceil((endAt-Date.now())/1000)):0;
+$("#am").textContent=P.rel>0?"Reloading…":a.m+" / "+a.r;$("#wn").textContent=(P.gun+1)+" "+g.n;$("#hp i").style.width=Math.max(0,P.hp)+"%";
+$("#tm").textContent=endAt?Math.floor(left/60)+":"+String(left%60).padStart(2,"0"):"Free play";
+const ps=room.peers().filter(p=>p.kind==="viewer"&&p.presence.n&&(!p.isMe||p.sameTab)).sort((a,b)=>(b.presence.k|0)-(a.presence.k|0));
+$("#sb").replaceChildren(...ps.slice(0,6).map(p=>{const li=document.createElement("li");li.textContent=String(p.presence.n).slice(0,12)+(p.isMe?" (you)":"")+"  "+(p.presence.k|0)+" kills / "+(p.presence.d|0)+" deaths";return li}));
+if(!over)$("#ov").textContent=P.al?"":"Down. Back in "+Math.max(1,Math.ceil(P.resp))+"s"}
+function pres(){room.presence({x:P.x|0,y:P.y|0,a:+P.a.toFixed(2),hp:P.hp|0,al:P.al?1:0,g:P.gun,k:P.k,d:P.d})}
+let last=performance.now(),lp=0,ls=0;
+function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;update(dt);
+if(endAt&&Date.now()>endAt&&!over){over=1;endAt=0;const ps=room.peers().filter(p=>p.kind==="viewer"&&p.presence.n&&(!p.isMe||p.sameTab)).sort((a,b)=>(b.presence.k|0)-(a.presence.k|0));$("#ov").textContent="Match over. "+(ps[0]?String(ps[0].presence.n).slice(0,12)+" wins with "+(ps[0].presence.k|0)+" kills":"No players")}
+draw();if(t-lp>50){lp=t;pres()}if(t-ls>300){ls=t;hud()}requestAnimationFrame(loop)}
+function size(){dpr=Math.min(2,devicePixelRatio||1);cv.width=innerWidth*dpr;cv.height=innerHeight*dpr}
+cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);if(e.pointerType==="mouse"){mouse=1;useM=1;M.x=e.clientX;M.y=e.clientY;return}const s={id:e.pointerId,x0:e.clientX,y0:e.clientY,dx:0,dy:0};if(e.clientX<innerWidth/2)S.m=s;else S.a=s};
+cv.onpointermove=e=>{if(e.pointerType==="mouse"){useM=1;M.x=e.clientX;M.y=e.clientY;return}for(const s of[S.m,S.a])if(s&&s.id===e.pointerId){s.dx=(e.clientX-s.x0)/55;s.dy=(e.clientY-s.y0)/55;const l=Math.hypot(s.dx,s.dy);if(l>1){s.dx/=l;s.dy/=l}}};
+cv.onpointerup=cv.onpointercancel=e=>{if(e.pointerType==="mouse")mouse=0;if(S.m&&S.m.id===e.pointerId)S.m=null;if(S.a&&S.a.id===e.pointerId)S.a=null};
+cv.oncontextmenu=e=>e.preventDefault();
+onkeydown=e=>{if(!room)return;K[e.code]=1;if(/^Digit[1-5]$/.test(e.code))swap(+e.code[5]-1);if(e.code==="KeyR")reload();if(e.code==="KeyQ")swap(P.gun+1)};
+onkeyup=e=>K[e.code]=0;
+$("#rl").onclick=reload;$("#sw").onclick=()=>swap(P.gun+1);
+$("#go").onclick=()=>room.emit("ctl",{left:180,rst:1});
+function tab(h){head=h;$("#t1").className=h?"":"on";$("#t2").className=h?"on":"";$("#hl").hidden=!h;$("#go1").textContent=h?"Host match":"Join match";$("#err").textContent=""}
+$("#t1").onclick=()=>tab(0);$("#t2").onclick=()=>tab(1);
+async function enter(){
+const err=m=>{$("#err").textContent=m},n=$("#nm").value.trim().slice(0,12)||"Player",pc=$("#pc").value.trim().toLowerCase(),hc=$("#hc").value.trim();
+if(pc.length<3)return err("The player code needs at least 3 characters.");
+if(head&&(hc.length<3||hc===pc.toLowerCase()))return err("The head code needs 3+ characters and must differ from the player code.");
+err("Connecting…");
+let rm=null;try{rm=window.claude?await window.claude.use("room"):null}catch(e){}
+if(!rm)return err("Live multiplayer isn’t available. Open the shared link while signed in to Claude.");
+try{room=await rm.join("g"+hash(pc).toString(36))}catch(e){room=null;return err("Couldn’t open the room. Try again in a moment.")}
+name=n;role=head?"head":"player";const hh=head?hash(hc):0;
+const headHH=()=>{const h=room.peers().filter(p=>p.presence.role==="head").sort((a,b)=>a.updatedAt-b.updatedAt)[0];return h&&h.presence.hh};
+room.on("shot",m=>{if(m.isMe)return;const d=m.data||{},g=G[d.g|0];if(g&&isFinite(d.x)&&isFinite(d.y)&&isFinite(d.a))fire(+d.x,+d.y,+d.a,Math.min(.3,Math.abs(+d.b||g.sp)),g,0)});
+room.on("hit",m=>{const d=m.data||{};if(d.to!==myPeer()||!P.al||over)return;P.hp-=Math.max(0,Math.min(120,+d.d||0));P.hurt=.5;if(P.hp<=0){P.al=0;P.d++;P.resp=3;room.emit("kill",{to:m.peer,k:nameOf(m.peer),v:name})}});
+room.on("kill",m=>{const d=m.data||{};feed(String(d.k).slice(0,12)+" ▸ "+String(d.v).slice(0,12));if(d.to===myPeer()&&!over)P.k++});
+room.on("ctl",m=>{const p=room.peers().find(q=>q.peer===m.peer);if(!p||p.presence.role!=="head"||p.presence.hh!==headHH())return;const d=m.data||{};endAt=Date.now()+Math.max(0,Math.min(600,+d.left||0))*1000;if(d.rst){P.k=0;P.d=0;over=0;$("#ov").textContent="";spawn()}});
+await room.presence({n:name,role,hh,x:0,y:0,al:0});
+await new Promise(r=>setTimeout(r,1500));
+const hs=room.peers().filter(p=>p.presence.role==="head");
+if(!head&&!hs.length){await room.leave();room=null;return err("No head has opened this code yet. Ask the head to host first.")}
+if(head&&hs.some(p=>!p.isMe&&p.presence.hh!==hh)){await room.leave();room=null;return err("That player code is already hosted with a different head code.")}
+build(hash(pc));size();addEventListener("resize",size);spawn();
+$("#lobby").hidden=true;cv.style.display="block";$("#hud").style.display="block";if(head)$("#go").style.display="block";
+setInterval(()=>{if(head&&endAt>Date.now())room.emit("ctl",{left:Math.round((endAt-Date.now())/1000)})},3000);
+requestAnimationFrame(loop)}
+$("#go1").onclick=enter;
+</script></body></html>
 
