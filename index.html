@@ -76,13 +76,20 @@ class PeerRoom {
   async init() {
     return new Promise((resolve, reject) => {
       const myPeerId = this.isHead ? this.headPeerId : this.myId;
-      this.peer = new Peer(myPeerId, { debug: 0 });
+      
+      try {
+        this.peer = new Peer(myPeerId, { debug: 0 });
+      } catch(e) {
+        return reject(new Error('Failed to initialize peer connection.'));
+      }
 
       this.peer.on('error', err => {
         if (err.type === 'unavailable-id' && this.isHead) {
-          reject(new Error('Head already exists for this code.'));
+          reject(new Error('This room code is already active or locked on the server. Please wait 5 seconds or choose a different player code.'));
         } else if (!this.isHead && err.type === 'peer-unavailable') {
-          reject(new Error('Head not found.'));
+          reject(new Error('Head not found. Make sure the head has hosted this match first.'));
+        } else {
+          reject(new Error('Connection error: ' + err.type));
         }
       });
 
@@ -106,7 +113,7 @@ class PeerRoom {
             resolve(this);
           });
           conn.on('error', () => { reject(new Error('Could not connect to head.')); });
-          setTimeout(() => { if (!this.connToHead) reject(new Error('Connection timeout to head.')); }, 5000);
+          setTimeout(() => { if (!this.connToHead) reject(new Error('Connection timeout to head.')); }, 6000);
         }
       });
     });
@@ -233,8 +240,19 @@ class PeerRoom {
     }
   }
 
-  async leave() { if (this.peer) this.peer.destroy(); }
+  async leave() { 
+    if (this.peer) {
+      try { this.peer.destroy(); } catch(e){}
+    } 
+  }
 }
+
+// Clean up peer instance on page reload/close so ID releases immediately
+window.addEventListener('beforeunload', () => {
+  if (room && room.peer) {
+    try { room.peer.destroy(); } catch(e){}
+  }
+});
 
 const $=s=>document.querySelector(s),W=1800,H=1200,R=14;
 const G=[
@@ -316,11 +334,4 @@ draw();if(t-lp>50){lp=t;pres()}if(t-ls>300){ls=t;hud()}requestAnimationFrame(loo
 function size(){dpr=Math.min(2,devicePixelRatio||1);cv.width=innerWidth*dpr;cv.height=innerHeight*dpr}
 cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);if(e.pointerType==="mouse"){mouse=1;useM=1;M.x=e.clientX;M.y=e.clientY;return}const s={id:e.pointerId,x0:e.clientX,y0:e.clientY,dx:0,dy:0};if(e.clientX<innerWidth/2)S.m=s;else S.a=s};
 cv.onpointermove=e=>{if(e.pointerType==="mouse"){useM=1;M.x=e.clientX;M.y=e.clientY;return}for(const s of[S.m,S.a])if(s&&s.id===e.pointerId){s.dx=(e.clientX-s.x0)/55;s.dy=(e.clientY-s.y0)/55;const l=Math.hypot(s.dx,s.dy);if(l>1){s.dx/=l;s.dy/=l}}};
-cv.onpointerup=cv.onpointercancel=e=>{if(e.pointerType==="mouse")mouse=0;if(S.m&&S.m.id===e.pointerId)S.m=null;if(S.a&&S.a.id===e.pointerId)S.a=null};
-cv.oncontextmenu=e=>e.preventDefault();
-onkeydown=e=>{if(!room)return;K[e.code]=1;if(/^Digit[1-5]$/.test(e.code))swap(+e.code[5]-1);if(e.code==="KeyR")reload();if(e.code==="KeyQ")swap(P.gun+1)};
-onkeyup=e=>K[e.code]=0;
-$("#rl").onclick=reload;$("#sw").onclick=()=>swap(P.gun+1);
-$("#go").onclick=()=>room.emit("ctl",{left:180,rst:1});
-function tab(h){head=h;$("#t1").className=h?"":"on";$("#t2").className=h?"on":"";$("#hl").hidden=!h;$("#go1").textContent=h?"Host match":"Join match";$("#err").textContent=""}
-$("#t1").oncli
+cv.onpointerup=cv.onpointercancel=e=>{if(e.pointerType==="mouse")mouse=0;if(S.m&&S.m.id===e.pointerId)S
